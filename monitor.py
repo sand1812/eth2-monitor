@@ -13,7 +13,9 @@ import json
 
 
 config = configparser.ConfigParser() # on relis la config pour qu'elle puisse etre changee en live
-config.read('config.ini')
+if not config.read('config.ini') :
+    print ("Configuration file 'config.ini' not found or empty")
+    sys.exit(2)
 
 
 w3 = Web3(Web3.HTTPProvider(config['eth1']['host']))
