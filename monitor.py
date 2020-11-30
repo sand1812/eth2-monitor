@@ -9,7 +9,7 @@ import configparser
 import ovh
 import sys
 import json
-
+import urllib
 
 
 config = configparser.ConfigParser() # on relis la config pour qu'elle puisse etre changee en live
@@ -22,6 +22,7 @@ w3 = Web3(Web3.HTTPProvider(config['eth1']['host']))
 
 DEBUG=True
 LASTSMS=None
+BALANCES = {}
 
 def do_alert(cause, datas) :
     global LASTSMS, DEBUG
@@ -104,6 +105,18 @@ def debug_print(msg) :
         print("[%s] %s" % (datetime.datetime.now().isoformat(), msg))
 
 
+
+
+def getResponse(url):
+    operUrl = urllib.request.urlopen(url)
+    if(operUrl.getcode()==200):
+        data = operUrl.read()
+        jsonData = json.loads(data)
+    else:
+        print("Error receiving data", operUrl.getcode())
+    return jsonData
+
+        
 def check_state(cur,last) :
     if cur != last :
         if cur == "Ok" and last != None :
@@ -111,6 +124,10 @@ def check_state(cur,last) :
             do_alert("Eth1 is back to normal state","Last state was " + last)
     return cur
             
+
+
+
+
 
 last_state = None        
 while True :
@@ -124,6 +141,23 @@ while True :
             time.sleep(60)
         else :
             debug_print("Sync Ok")
+
+
+        # Maintenant l'eth2
+        si = ''
+        for i in config['eth2']['indices'].split(',') :
+            si = si + 'indices=%s&' %i
+        debug_print(si)
+        r = getResponse('http://localhost:3500/eth/v1alpha1/validators/balances?%s' % si)
+        for b in r['balances'] :
+            debug_print(b)
+            if b['status'] != 'ACTIVE' :
+                do_alert("Eth2 Validator not active !", str(b))
+            if b['index'] not in BALANCES :
+                BALANCES[b['index']] = b['balance']
+            if BALANCES[b['index']] < b['balance'] :
+                do_alert('Loosing ETHERS !!!!', str(b))
+            BALANCES[b['index']] = b['balance']
     except Exception as e :
         debug_print("Exception has occured : %s - %s" % (e, e.args))
         do_alert(type(e).__name__, e.args)
