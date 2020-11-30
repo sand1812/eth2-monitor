@@ -10,40 +10,44 @@ import ovh
 import sys
 import json
 
-w3 = Web3(Web3.HTTPProvider('http://localhost:8545'))
+
+
+config = configparser.ConfigParser() # on relis la config pour qu'elle puisse etre changee en live
+config.read('config.ini')
+
+
+w3 = Web3(Web3.HTTPProvider(config['eth1']['host']))
 
 DEBUG=True
 LASTSMS=None
 
 def do_alert(cause, datas) :
     global LASTSMS, DEBUG
-    config = configparser.ConfigParser() # on relis la config pour qu'elle puisse etre changee en live
-    config.read('config.ini')
     if config['mail']['enabled'] == "1" :
         debug_print("Sending mail")
-        mail_alert(cause, datas, config)
+        mail_alert(cause, datas)
     if config['sms']['enabled'] == "1" :
         if LASTSMS != cause :
             debug_print("Sending sms")        
-            sms_alert(cause, datas, config)
+            sms_alert(cause, datas)
             LASTSMS = cause
         else :
             debug_print('Cause not changed. No resending SMS')
     
 
-def mail_alert(cause, datas, config):
+def mail_alert(cause, datas):
     sender = config['mail']['from']
     receivers = config['mail']['to']
 
-    message = """From: Monitoring Ethereum <sand@narguile.org>
-To: Greg <sand@narguile.org>
+    message = """From: Monitoring Ethereum <%s>
+To: %s
 Subject: Ethereum alert
 
 
 A problem has occured on %s.    
 Alert : %s
 Datas : %s
-    """ % (socket.getfqdn(),cause, datas)
+    """ % (config['mail']['from'],config['mail']['to'],socket.getfqdn(),cause, datas)
     
 
     try:
@@ -55,7 +59,7 @@ Datas : %s
         print ("Error: unable to send email")
 
 
-def sendSMS(dest,message,config) :
+def sendSMS(dest,message) :
     client = ovh.Client('ovh-eu', application_key=config['sms']['appKey'], application_secret=config['sms']['appSecret'], consumer_key=config['sms']['consumerKey'])
     
     res = client.get('/sms')
@@ -87,9 +91,9 @@ def sendSMS(dest,message,config) :
 
 
         
-def sms_alert(cause, datas, config) :
+def sms_alert(cause, datas) :
     msg = "ETH1 ALERT : %s ; Datas : %s" % (cause, datas)
-    sendSMS(config['sms']['to'], msg, config)
+    sendSMS(config['sms']['to'], msg)
     
 
         
