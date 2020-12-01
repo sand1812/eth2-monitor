@@ -155,7 +155,7 @@ while True :
                 do_alert("Eth2 Validator not active !", str(b))
             if b['index'] not in BALANCES :
                 BALANCES[b['index']] = b['balance']
-            if BALANCES[b['index']] < b['balance'] :
+            if BALANCES[b['index']] > b['balance'] :
                 do_alert('Loosing ETHERS !!!!', str(b))
             BALANCES[b['index']] = b['balance']
     except Exception as e :
