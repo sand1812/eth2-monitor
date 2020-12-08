@@ -135,10 +135,11 @@ while True :
     debug_print('TIC')
     try :        
         if w3.eth.syncing :
-            do_alert("Eth1 Not Synced !", w3.eth.syncing)
-            debug_print("Not synced")
-            curstate = "No Synced"
-            time.sleep(60)
+            if (w3.eth.syncing['currentBlock'] - w3.eth.syncing['highestBlock'] > 1) :
+                do_alert("Eth1 Not Synced !", w3.eth.syncing)
+                debug_print("Not synced")
+                curstate = "No Synced"
+                time.sleep(60)
         else :
             debug_print("Sync Ok")
 
